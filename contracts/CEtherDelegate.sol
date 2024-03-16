@@ -56,6 +56,7 @@ contract CEtherDelegate is CToken, CDelegateInterface {
                 string memory name_,
                 string memory symbol_,
                 uint8 decimals_) virtual override public {
+        admin = payable(msg.sender);
         super.initialize(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
     }
 
@@ -105,19 +106,7 @@ contract CEtherDelegate is CToken, CDelegateInterface {
      * @dev Reverts upon any failure
      */
     function repayBorrow() external payable {
-        uint error = accrueInterest();
-        requireNoError(error, "repayBorrow accrue failed");
-        (MathError mErr, uint accountBorrows) = borrowBalanceStoredInternal(msg.sender);
-        if (mErr != MathError.NO_ERROR) {
-            requireNoError(error, "repayBorrow math failed");
-        }
-        uint backValue = 0;
-        if (msg.value > accountBorrows) {
-            backValue = msg.value - accountBorrows;
-            doTransferOut(payable(msg.sender), backValue);
-        }
-
-        (uint err,) = repayBorrowInternal(msg.value - backValue);
+        (uint err,) = repayBorrowInternal(msg.value);
         requireNoError(err, "repayBorrow failed");
     }
 

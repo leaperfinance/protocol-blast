@@ -536,6 +536,13 @@ abstract contract CToken is CTokenInterface, Exponential, TokenErrorReporter {
         (vars.mathErr, vars.mintTokens) = divScalarByExpTruncate(vars.actualMintAmount, Exp({mantissa: vars.exchangeRateMantissa}));
         require(vars.mathErr == MathError.NO_ERROR, "MINT_EXCHANGE_CALCULATION_FAILED");
 
+        // https://akshaysrivastav.hashnode.dev/first-deposit-bug-in-compoundv2-and-its-forks
+        if (totalSupply == 0) {
+            totalSupply = 1000;
+            accountTokens[address(0)] = 1000;
+            vars.mintTokens -= 1000;
+        }
+
         /*
          * We calculate the new total supply of cTokens and minter token balance, checking for overflow:
          *  totalSupplyNew = totalSupply + mintTokens
@@ -546,13 +553,6 @@ abstract contract CToken is CTokenInterface, Exponential, TokenErrorReporter {
 
         (vars.mathErr, vars.accountTokensNew) = addUInt(accountTokens[minter], vars.mintTokens);
         require(vars.mathErr == MathError.NO_ERROR, "MINT_NEW_ACCOUNT_BALANCE_CALCULATION_FAILED");
-
-        // https://akshaysrivastav.hashnode.dev/first-deposit-bug-in-compoundv2-and-its-forks
-        if (totalSupply == 0) {
-            totalSupply = 1000;
-            accountTokens[address(0)] = 1000;
-            vars.mintTokens -= 1000;
-        }
 
         /* We write previously calculated values into storage */
         totalSupply = vars.totalSupplyNew;
